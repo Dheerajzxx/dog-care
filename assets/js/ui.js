@@ -239,6 +239,12 @@ window.DH = window.DH || {};
       document.body.classList.toggle('nav-locked', open);
       navToggle.setAttribute('aria-expanded', String(open));
       navToggle.textContent = open ? '✕' : '☰';
+      if (open) {
+        const first = navLinks.querySelector('a');
+        if (first) first.focus();          // keyboard users land in the drawer
+      } else if (document.activeElement && navLinks.contains(document.activeElement)) {
+        navToggle.focus();                 // return focus to the trigger
+      }
     }
 
     navToggle.addEventListener('click', function () {
@@ -253,6 +259,15 @@ window.DH = window.DH || {};
     });
     window.addEventListener('resize', function () {
       if (window.innerWidth > 860) setNav(false);
+    });
+
+    // Same gesture polish as the admin drawer: swipe-to-close on the panel,
+    // edge-swipe-to-open from the right edge (drawer slides from the right)
+    ui.addDrawerGestures(navLinks, {
+      side: 'right',
+      isOpen: function () { return navLinks.classList.contains('open'); },
+      open: function () { setNav(true); },
+      close: function () { setNav(false); }
     });
   };
 
@@ -428,9 +443,10 @@ window.DH = window.DH || {};
   ui.addDrawerGestures = function (panel, handlers) {
     if (!panel || !handlers) return;
 
-    const EDGE = 24;          // px from left edge that opens the drawer
-    const THRESHOLD = 0.35;   // release closes if dragged past 35% of width
-    const VELOCITY = 0.5;     // px/ms — flick closes even before threshold
+    const side = handlers.side === 'right' ? 'right' : 'left';
+    const EDGE = 24;          // px from the drawer's edge that opens it
+    const THRESHOLD = 0.35;   // release flips state past 35% of width
+    const VELOCITY = 0.5;     // px/ms — flick flips even before threshold
 
     let tracking = false, axis = null, startX = 0, startY = 0;
     let startTime = 0, baseOffset = 0, currentX = 0, panelWidth = 0;
@@ -454,8 +470,13 @@ window.DH = window.DH || {};
 
       let inPanel = false;
       try { inPanel = panel.contains(e.target); } catch (err) { /* old browsers */ }
-      if (!open && t.clientX > EDGE) return;      // only edge swipes open
       if (open && !inPanel) return;               // only panel swipes close
+      if (!open) {
+        const fromEdge = side === 'left'
+          ? t.clientX <= EDGE
+          : t.clientX >= window.innerWidth - EDGE;
+        if (!fromEdge) return;                    // only edge swipes open
+      }
 
       // Let vertical scrollers inside the panel win
       let node = e.target;
@@ -469,7 +490,7 @@ window.DH = window.DH || {};
 
       tracking = true; axis = null;
       startX = t.clientX; startY = t.clientY; startTime = Date.now();
-      currentX = open ? 0 : -panel.offsetWidth;
+      currentX = open ? 0 : (side === 'left' ? -panel.offsetWidth : panel.offsetWidth);
       baseOffset = currentX;
       panelWidth = panel.offsetWidth || 240;
     }
@@ -489,7 +510,10 @@ window.DH = window.DH || {};
 
       e.preventDefault(); // horizontal drag: stop the page scrolling
       const raw = baseOffset + dx;
-      currentX = Math.min(0, Math.max(-panelWidth, raw));
+      // clamp between open (0) and closed (±W): left [-W,0], right [0,W]
+      currentX = side === 'left'
+        ? Math.min(0, Math.max(-panelWidth, raw))
+        : Math.max(0, Math.min(panelWidth, raw));
       setTranslate(currentX);
     }
 
@@ -497,10 +521,12 @@ window.DH = window.DH || {};
       if (!tracking) return;
       tracking = false;
       const dt = Math.max(1, Date.now() - startTime);
-      const velocity = (currentX - baseOffset) / dt;   // px/ms, negative = leftward
-      const shouldOpen =
-        (baseOffset < 0) ? (currentX > -panelWidth * (1 - THRESHOLD) || velocity > VELOCITY) :
-        (currentX > -panelWidth * THRESHOLD || velocity > VELOCITY);
+      const vel = (currentX - baseOffset) / dt;          // px/ms along x
+      const opening = side === 'left' ? vel : -vel;      // positive = toward open
+      const travelled = Math.abs(currentX) / panelWidth; // 0 = open .. 1 = closed
+      const shouldOpen = (baseOffset !== 0)
+        ? (1 - travelled) > THRESHOLD || opening > VELOCITY
+        : travelled < THRESHOLD || opening > VELOCITY;
       clearTranslate();                                // CSS transition takes over
       if (shouldOpen) handlers.open(); else handlers.close();
       axis = null;

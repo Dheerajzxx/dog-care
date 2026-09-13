@@ -159,6 +159,8 @@ dog-hospital/
 - [x] Mobile admin: off-canvas sidebar with backdrop, Escape/backdrop close, scroll lock (geometry-verified)
 - [x] Admin drawer gestures: finger-following swipe-to-close, edge-swipe-to-open, snap-back threshold + flick velocity (synthetic-touch verified)
 - [x] Public mobile navbar: animated drawer panel, backdrop, Escape, scroll lock, aria-expanded
+- [x] Gesture parity: public nav drawer supports swipe-to-close + right-edge-swipe-to-open (shared gesture engine, `side: 'right'`)
+- [x] Reduced-motion support: drawers snap instead of slide when `prefers-reduced-motion` is set
 - [x] Responsive audit: 16 pages × 390/768/1440 — zero horizontal overflow, zero offenders; dashboard 2-col grids collapse on mobile
 
 **Deliverable:** Polished, consistent, demo-ready site.

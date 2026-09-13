@@ -485,6 +485,9 @@ ul[class], ol[class] { list-style: none; }
   /* Keep the ✕ tappable above the backdrop */
   .nav-toggle { position: relative; z-index: 560; }
 
+  /* Finger-following drag: kill the transition so the panel tracks 1:1 */
+  .nav-links.dragging { transition: none !important; will-change: transform; }
+
   /* Slides in with the panel */
   .nav-backdrop {
     position: fixed;
@@ -504,6 +507,12 @@ ul[class], ol[class] { list-style: none; }
 }
 @media (max-width: 560px) {
   .footer-inner { grid-template-columns: 1fr; }
+}
+
+/* Respect users who prefer reduced motion: drawers snap instead of slide */
+@media (prefers-reduced-motion: reduce) {
+  .nav-links, .nav-backdrop,
+  .admin-sidebar, .sidebar-backdrop { transition: none !important; }
 }
 
 /* ============================================================
