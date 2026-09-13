@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Customers</h3><p class="text-muted" style="font-size:.9rem">Dog owners, their pets and visit history.</p></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" id="btn-add">+ Add customer</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input class="input" id="flt-search" placeholder="🔍 Search name, email, phone…">
+    </div>
+
+    <div class="table-wrap" id="cus-table"></div>
+  </div>
+
+  <!-- Add/edit customer modal -->
+  <div class="modal-overlay" id="cus-modal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="cm-title">Add customer</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="cus-form" novalidate>
+          <input type="hidden" id="cm-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Full name <span class="req">*</span></label>
+              <input class="input" id="cm-name" data-validate="required" placeholder="Jane Doe">
+              <div class="field-error">Name is required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Phone <span class="req">*</span></label>
+              <input class="input" id="cm-phone" data-validate="required phone" placeholder="555-0100">
+              <div class="field-error">Valid phone required.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Email <span class="req">*</span></label>
+              <input class="input" id="cm-email" data-validate="required email" placeholder="jane@example.com">
+              <div class="field-error">Valid email required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Address</label>
+              <input class="input" id="cm-address" placeholder="12 Maple St">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="cm-save">Save customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer profile modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header"><h3>Customer profile</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body" id="profile-body"></div>
+      <div class="modal-footer"><button class="btn btn-ghost" data-close-modal>Close</button></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/table.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('customers', 'Customers');
+    DH.ui.initModals();
+
+    const U = DH.ui, S = DH.store, L = DH.lookup;
+
+    function dogsOf(cusId) { return S.list('patients').filter(p => p.ownerId === cusId); }
+    function visitsOf(cusId) {
+      return dogsOf(cusId).reduce((n, p) => n + L.patientAppointments(p.id).length, 0);
+    }
+
+    function filteredRows() {
+      const f = DH.tables.readFilters();
+      return S.list('customers').filter(c => {
+        if (!f.search) return true;
+        return (c.name + ' ' + c.email + ' ' + c.phone).toLowerCase().includes(f.search);
+      });
+    }
+
+    const table = DH.tables.renderTable({
+      mount: 'cus-table',
+      data: [],
+      pageSize: 8,
+      emptyText: 'No customers found',
+      getFiltered: () => filteredRows(),
+      columns: [
+        { header: 'Name', render: (c) => '<strong>' + U.escape(c.name) + '</strong>', sortValue: (c) => c.name },
+        { header: 'Contact', render: (c) => U.escape(c.phone) + '<br><span class="text-muted" style="font-size:.82rem">' + U.escape(c.email) + '</span>' },
+        { header: 'Address', render: (c) => U.escape(c.address || '—') },
+        { header: 'Dogs', render: (c) => dogsOf(c.id).map(d => '<span class="badge badge-primary">' + U.escape(d.name) + '</span>').join(' ') || '—' },
+        { header: 'Visits', render: (c) => visitsOf(c.id), sortValue: (c) => visitsOf(c.id) },
+        { header: 'Since', render: (c) => U.formatDate(c.createdAt) },
+        {
+          header: 'Actions', className: 'actions',
+          render: (c) =>
+            '<button class="btn btn-outline btn-sm" data-view="' + c.id + '">Profile</button>' +
+            '<button class="btn btn-ghost btn-sm" data-edit="' + c.id + '">Edit</button>' +
+            '<button class="btn btn-ghost btn-sm text-danger" data-del="' + c.id + '">🗑</button>'
+        }
+      ]
+    });
+
+    document.getElementById('flt-search').addEventListener('input', () => table.refresh());
+
+    // profile
+    function openProfile(id) {
+      const c = S.get('customers', id);
+      const dogs = dogsOf(id);
+      const appts = [];
+      dogs.forEach(d => L.patientAppointments(d.id).forEach(a => appts.push(a)));
+      appts.sort((a, b) => (a.date < b.date ? 1 : -1));
+
+      document.getElementById('profile-body').innerHTML =
+        '<dl class="detail-grid">' +
+        '<dt>Name</dt><dd>' + U.escape(c.name) + '</dd>' +
+        '<dt>Phone</dt><dd>' + U.escape(c.phone) + '</dd>' +
+        '<dt>Email</dt><dd>' + U.escape(c.email) + '</dd>' +
+        '<dt>Address</dt><dd>' + U.escape(c.address || '—') + '</dd>' +
+        '<dt>Customer since</dt><dd>' + U.formatDate(c.createdAt) + '</dd>' +
+        '</dl>' +
+        '<h4 class="mt-6 mb-4">🐕 Dogs</h4>' +
+        (dogs.length ? dogs.map(d =>
+          '<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--c-border);border-radius:10px;padding:10px 14px;margin-bottom:8px">' +
+          '<div><strong>' + U.escape(d.name) + '</strong> <span class="text-muted" style="font-size:.85rem">· ' + U.escape(d.breed || '—') + ' · ' + (d.age || 0) + 'y</span></div>' +
+          U.statusBadge(vaxStateOf(d)) +
+          '</div>'
+        ).join('') : '<p class="text-muted">No dogs registered.</p>') +
+        '<h4 class="mt-6 mb-4">📅 Recent visits</h4>' +
+        (appts.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Dog</th><th>Service</th><th>Status</th></tr></thead><tbody>' +
+          appts.slice(0, 8).map(a => {
+            const v = L.appointmentView(a);
+            return '<tr><td>' + U.formatDate(a.date) + '</td><td>' + U.escape(v.patient.name) + '</td><td>' + U.escape(v.service.name) + '</td><td>' + U.statusBadge(a.status) + '</td></tr>';
+          }).join('') + '</tbody></table></div>'
+          : '<p class="text-muted">No visits yet.</p>');
+
+      U.openModal('profile-modal');
+    }
+
+    function vaxStateOf(p) {
+      let worst = 'ok';
+      (p.vaccinations || []).forEach(v => {
+        if (!v.due) return;
+        const days = Math.ceil((new Date(v.due + 'T12:00:00') - new Date()) / 86400000);
+        if (days < 0) worst = 'Overdue';
+        else if (days <= 60 && worst !== 'Overdue') worst = 'Due soon';
+      });
+      return worst === 'ok' ? 'Up to date' : worst;
+    }
+
+    // add / edit
+    function openEdit(id) {
+      document.getElementById('cm-title').textContent = id ? 'Edit customer' : 'Add customer';
+      document.getElementById('cm-id').value = id || '';
+      const c = id ? S.get('customers', id) : null;
+      document.getElementById('cm-name').value = c ? c.name : '';
+      document.getElementById('cm-phone').value = c ? c.phone : '';
+      document.getElementById('cm-email').value = c ? c.email : '';
+      document.getElementById('cm-address').value = c ? (c.address || '') : '';
+      U.openModal('cus-modal');
+    }
+
+    document.getElementById('btn-add').addEventListener('click', () => openEdit(null));
+
+    document.getElementById('cm-save').addEventListener('click', function () {
+      if (!U.validateForm(document.getElementById('cus-form'))) return;
+      const id = document.getElementById('cm-id').value;
+      const data = {
+        name: document.getElementById('cm-name').value.trim(),
+        phone: document.getElementById('cm-phone').value.trim(),
+        email: document.getElementById('cm-email').value.trim(),
+        address: document.getElementById('cm-address').value.trim()
+      };
+      if (id) {
+        S.update('customers', id, data);
+        U.toast('Customer updated', 'success');
+      } else {
+        S.add('customers', Object.assign({ createdAt: new Date().toISOString().slice(0, 10) }, data));
+        U.toast('Customer added', 'success');
+      }
+      U.closeModal('cus-modal');
+      table.refresh();
+    });
+
+    document.addEventListener('click', function (e) {
+      const viewBtn = e.target.closest('[data-view]');
+      if (viewBtn) { openProfile(viewBtn.getAttribute('data-view')); return; }
+
+      const editBtn = e.target.closest('[data-edit]');
+      if (editBtn) { openEdit(editBtn.getAttribute('data-edit')); return; }
+
+      const delBtn = e.target.closest('[data-del]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-del');
+        const c = S.get('customers', id);
+        if (dogsOf(id).length) {
+          U.toast('Cannot delete — ' + c.name + ' has registered dogs. Reassign them first.', 'warning');
+          return;
+        }
+        U.confirm({ title: 'Delete ' + c.name + '?', confirmText: 'Delete' }).then((ok) => {
+          if (ok) {
+            S.remove('customers', id);
+            U.toast('Customer removed', 'success');
+            table.refresh();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

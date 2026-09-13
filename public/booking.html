@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book an Appointment — PawCare Dog Hospital</title>
+  <meta name="description" content="Book a veterinary appointment online in under a minute — choose a service, doctor and time slot that works for you.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/public.css">
+</head>
+<body>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <h1>Book an Appointment</h1>
+        <p>Four quick steps — service, time, details, done.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="wizard-steps" id="wizard-steps">
+          <div class="wstep active" data-step="1"><span class="num">1</span><span class="lbl">Service</span></div>
+          <div class="wstep" data-step="2"><span class="bar"></span><span class="num">2</span><span class="lbl">Date &amp; time</span></div>
+          <div class="wstep" data-step="3"><span class="bar"></span><span class="num">3</span><span class="lbl">Details</span></div>
+          <div class="wstep" data-step="4"><span class="bar"></span><span class="num">4</span><span class="lbl">Confirm</span></div>
+        </div>
+
+        <div class="book-layout">
+          <div class="card card-pad">
+            <!-- STEP 1: service -->
+            <div id="step-1">
+              <h3 class="mb-4">Choose a service</h3>
+              <div style="display:grid;gap:10px" id="service-list"></div>
+            </div>
+
+            <!-- STEP 2: doctor, date, time -->
+            <div id="step-2" hidden>
+              <h3 class="mb-4">Pick doctor, date &amp; time</h3>
+              <div class="form-group">
+                <label class="label">Preferred doctor</label>
+                <div style="display:grid;gap:10px" id="doctor-list"></div>
+                <div class="hint">Leave empty for "first available".</div>
+              </div>
+              <div class="form-group">
+                <label class="label" for="bk-date">Date <span class="req">*</span></label>
+                <input class="input date-input" type="date" id="bk-date">
+                <div class="field-error" id="err-date">Pick a date.</div>
+              </div>
+              <div class="form-group">
+                <label class="label">Available times <span class="req">*</span></label>
+                <div class="slot-grid" id="slot-grid"></div>
+                <div class="hint">Times reflect existing bookings for this doctor &amp; date.</div>
+                <div class="field-error" id="err-slot">Please pick a time slot.</div>
+              </div>
+            </div>
+
+            <!-- STEP 3: details -->
+            <div id="step-3" hidden>
+              <h3 class="mb-4">Your dog &amp; contact details</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="bk-owner">Your name <span class="req">*</span></label>
+                  <input class="input" id="bk-owner" data-validate="required" placeholder="Jane Doe">
+                  <div class="field-error">Please enter your name.</div>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="bk-phone">Phone <span class="req">*</span></label>
+                  <input class="input" id="bk-phone" data-validate="required phone" placeholder="555-0199">
+                  <div class="field-error">Please enter a valid phone.</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="bk-email">Email <span class="req">*</span></label>
+                  <input class="input" id="bk-email" type="email" data-validate="required email" placeholder="jane@example.com">
+                  <div class="field-error">Enter a valid email.</div>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="bk-dogname">Dog's name <span class="req">*</span></label>
+                  <input class="input" id="bk-dogname" data-validate="required" placeholder="Max">
+                  <div class="field-error">Please enter your dog's name.</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="bk-breed">Breed</label>
+                  <input class="input" id="bk-breed" placeholder="Golden Retriever">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="bk-age">Age (years)</label>
+                  <input class="input" id="bk-age" type="number" min="0" max="30" placeholder="4">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="label" for="bk-reason">Reason for visit <span class="req">*</span></label>
+                <textarea class="textarea" id="bk-reason" data-validate="required" placeholder="Annual check-up, limping, vaccines…"></textarea>
+                <div class="field-error">Tell us briefly why you're coming.</div>
+              </div>
+            </div>
+
+            <!-- STEP 4: confirmation -->
+            <div id="step-4" hidden>
+              <div class="confirm-panel">
+                <div class="big-check">✓</div>
+                <h2>Appointment requested!</h2>
+                <p class="text-muted mt-2">We've received your request. Our staff will confirm shortly — keep an eye on your phone.</p>
+                <div class="ref-code" id="bk-ref">APT-0000</div>
+                <p class="text-muted">Booking details are shown on the right.</p>
+                <div class="mt-4" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                  <a class="btn btn-outline" href="../index.html">Back to home</a>
+                  <button class="btn btn-primary" id="bk-again">Book another dog</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-nav" id="wizard-nav">
+              <button class="btn btn-ghost" id="bk-prev" disabled>← Back</button>
+              <button class="btn btn-primary" id="bk-next">Continue →</button>
+            </div>
+          </div>
+
+          <aside class="card card-pad book-summary">
+            <h3 style="margin-bottom:8px">Booking summary</h3>
+            <dl>
+              <div><dt>Service</dt><dd id="sum-service">—</dd></div>
+              <div><dt>Doctor</dt><dd id="sum-doctor">—</dd></div>
+              <div><dt>Date</dt><dd id="sum-date">—</dd></div>
+              <div><dt>Time</dt><dd id="sum-time">—</dd></div>
+            </dl>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;">
+              <span class="text-muted" style="font-weight:700">Estimated total</span>
+              <span style="font-weight:900;font-size:1.3rem;color:var(--c-accent)" id="sum-price">$0</span>
+            </div>
+            <div class="alert alert-info mt-4" style="font-size:.85rem">Payment is handled at the clinic after the visit.</div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/public.js"></script>
+  <script>
+    DH.ui.initPublicPage();
+    DH.public.root = '..';
+
+    const S = DH.store, L = DH.lookup, U = DH.ui;
+    let sel = { serviceId: null, doctorId: null, date: null, time: null };
+    let step = 1;
+
+    function $(id) { return document.getElementById(id); }
+
+    function syncSummary() {
+      const svc = sel.serviceId ? L.service(sel.serviceId) : null;
+      $('sum-service').textContent = svc ? svc.name : '—';
+      const doc = sel.doctorId ? L.doctor(sel.doctorId) : null;
+      $('sum-doctor').textContent = doc ? doc.name : 'First available';
+      $('sum-date').textContent = sel.date ? U.formatDate(sel.date) : '—';
+      $('sum-time').textContent = sel.time ? U.formatTime(sel.time) : '—';
+      $('sum-price').textContent = svc ? U.money(svc.price) : '$0';
+    }
+
+    function gotoStep(n) {
+      step = n;
+      for (let i = 1; i <= 4; i++) $('step-' + i).hidden = i !== n;
+      document.querySelectorAll('.wstep').forEach((el) => {
+        const s = +el.getAttribute('data-step');
+        el.classList.toggle('active', s === n);
+        el.classList.toggle('done', s < n);
+      });
+      $('bk-prev').disabled = n === 1;
+      $('bk-next').textContent = n === 3 ? 'Confirm booking ✓' : 'Continue →';
+      $('wizard-nav').style.display = n === 4 ? 'none' : 'flex';
+      syncSummary();
+    }
+
+    function validateStep() {
+      if (step === 1) {
+        if (!sel.serviceId) { U.toast('Please choose a service first', 'warning'); return false; }
+        return true;
+      }
+      if (step === 2) {
+        const dateOk = !!$('bk-date').value;
+        const timeOk = !!sel.time;
+        $('err-date').classList.toggle('show', !dateOk);
+        $('err-slot').classList.toggle('show', !timeOk);
+        if (!dateOk || !timeOk) U.toast('Pick a date and a time slot', 'warning');
+        return dateOk && timeOk;
+      }
+      if (step === 3) {
+        return U.validateForm($('step-3'));
+      }
+      return true;
+    }
+
+    function renderServiceList() {
+      $('service-list').innerHTML = S.list('services').filter(s => s.active).map(s =>
+        '<button type="button" class="select-card' + (sel.serviceId === s.id ? ' selected' : '') + '" data-svc="' + s.id + '">' +
+        '<span style="font-size:1.5rem">' + (DH.public.icons[s.category] || '🐾') + '</span>' +
+        '<span><span class="sc-title">' + U.escape(s.name) + '</span><br>' +
+        '<span class="sc-sub">' + s.duration + ' min · ' + U.escape(s.category) + '</span></span>' +
+        '<span class="sc-price">' + U.money(s.price) + '</span></button>'
+      ).join('');
+    }
+
+    function renderDoctorList() {
+      $('doctor-list').innerHTML =
+        '<button type="button" class="select-card' + (sel.doctorId === null ? ' selected' : '') + '" data-doc-id="">' +
+        '<span style="font-size:1.5rem">🎲</span>' +
+        '<span><span class="sc-title">First available</span><br><span class="sc-sub">Fastest option</span></span></button>' +
+        S.list('doctors').filter(d => d.active).map(d =>
+          '<button type="button" class="select-card' + (sel.doctorId === d.id ? ' selected' : '') + '" data-doc-id="' + d.id + '">' +
+          '<span class="avatar avatar-sm" style="background:' + d.color + ';color:#fff">' + U.initials(d.name) + '</span>' +
+          '<span><span class="sc-title">' + U.escape(d.name) + '</span><br>' +
+          '<span class="sc-sub">' + U.escape(d.specialty) + '</span></span></button>'
+        ).join('');
+    }
+
+    function renderSlots() {
+      const grid = $('slot-grid');
+      const date = $('bk-date').value;
+      if (!date) { grid.innerHTML = '<p class="text-muted">Pick a date to see times.</p>'; return; }
+      const cfg = S.getSettings();
+      const interval = cfg.slotInterval || 30;
+      const [oh, om] = (cfg.openTime || '08:00').split(':').map(Number);
+      const [ch, cm] = (cfg.closeTime || '20:00').split(':').map(Number);
+      const start = oh * 60 + om, end = ch * 60 + cm;
+      const dayApps = S.list('appointments').filter(a =>
+        a.date === date && a.status !== 'cancelled' && (!sel.doctorId || a.doctorId === sel.doctorId)
+      );
+      let html = '';
+      for (let t = start; t < end; t += interval) {
+        const hh = String(Math.floor(t / 60)).padStart(2, '0');
+        const mm = String(t % 60).padStart(2, '0');
+        const time = hh + ':' + mm;
+        const taken = dayApps.some(a => a.time === time);
+        html += '<button type="button" class="slot' + (sel.time === time ? ' selected' : '') + '"' +
+          (taken ? ' disabled' : '') + ' data-time="' + time + '">' + U.formatTime(time) + '</button>';
+      }
+      grid.innerHTML = html;
+    }
+
+    document.addEventListener('click', function (e) {
+      const svc = e.target.closest('[data-svc]');
+      if (svc) { sel.serviceId = svc.getAttribute('data-svc'); renderServiceList(); syncSummary(); return; }
+
+      const doc = e.target.closest('[data-doc-id]');
+      if (doc) {
+        const id = doc.getAttribute('data-doc-id');
+        sel.doctorId = id === '' ? null : id;
+        renderDoctorList(); renderSlots(); syncSummary();
+        return;
+      }
+
+      const slot = e.target.closest('[data-time]');
+      if (slot && !slot.disabled) {
+        sel.time = slot.getAttribute('data-time');
+        $('err-slot').classList.remove('show');
+        document.querySelectorAll('.slot').forEach(b => b.classList.remove('selected'));
+        slot.classList.add('selected');
+        syncSummary();
+      }
+    });
+
+    $('bk-date').addEventListener('change', function () {
+      sel.date = this.value; sel.time = null;
+      if (this.value) $('err-date').classList.remove('show');
+      renderSlots(); syncSummary();
+    });
+
+    $('bk-prev').addEventListener('click', function () { gotoStep(step - 1); });
+
+    $('bk-next').addEventListener('click', function () {
+      if (!validateStep()) return;
+      if (step < 3) { gotoStep(step + 1); return; }
+      submitBooking();
+    });
+
+    function pickAvailableDoctor() {
+      const active = S.list('doctors').filter(d => d.active);
+      const busy = new Set(
+        S.list('appointments')
+          .filter(a => a.date === sel.date && a.status !== 'cancelled' && a.time === sel.time)
+          .map(a => a.doctorId)
+      );
+      const free = active.find(d => !busy.has(d.id));
+      return (free || active[0]).id;
+    }
+
+    function submitBooking() {
+      const owner = S.list('customers').find(c =>
+        c.email.toLowerCase() === $('bk-email').value.trim().toLowerCase()
+      ) || S.add('customers', {
+        name: $('bk-owner').value.trim(),
+        phone: $('bk-phone').value.trim(),
+        email: $('bk-email').value.trim(),
+        address: '',
+        createdAt: new Date().toISOString().slice(0, 10)
+      });
+
+      const pat = S.list('patients').find(p =>
+        p.ownerId === owner.id && p.name.toLowerCase() === $('bk-dogname').value.trim().toLowerCase()
+      ) || S.add('patients', {
+        name: $('bk-dogname').value.trim(),
+        breed: $('bk-breed').value.trim(),
+        gender: '',
+        age: +$('bk-age').value || 0,
+        weight: 0,
+        ownerId: owner.id,
+        photo: '',
+        color: '#0e7c86',
+        vaccinations: [],
+        allergies: [],
+        notes: ''
+      });
+
+      const apt = S.add('appointments', {
+        serviceId: sel.serviceId,
+        doctorId: sel.doctorId || pickAvailableDoctor(),
+        patientId: pat.id,
+        date: sel.date,
+        time: sel.time,
+        status: 'pending',
+        reason: $('bk-reason').value.trim(),
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+
+      $('bk-ref').textContent = apt.id.toUpperCase();
+      gotoStep(4);
+      U.toast('Booking received! Ref ' + apt.id.toUpperCase(), 'success');
+    }
+
+    $('bk-again').addEventListener('click', function () {
+      sel = { serviceId: null, doctorId: null, date: null, time: null };
+      renderServiceList(); renderDoctorList();
+      ['bk-owner', 'bk-phone', 'bk-email', 'bk-dogname', 'bk-breed', 'bk-age', 'bk-reason'].forEach(id => { $(id).value = ''; });
+      $('bk-date').value = '';
+      $('slot-grid').innerHTML = '<p class="text-muted">Pick a date to see times.</p>';
+      gotoStep(1);
+    });
+
+    (function init() {
+      renderServiceList();
+      renderDoctorList();
+      gotoStep(1);
+      const pre = new URLSearchParams(location.search).get('service');
+      if (pre && L.service(pre)) { sel.serviceId = pre; renderServiceList(); syncSummary(); }
+    })();
+  </script>
+</body>
+</html>

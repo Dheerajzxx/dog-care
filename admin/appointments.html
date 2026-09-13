@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointments — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Appointments</h3><p class="text-muted" style="font-size:.9rem">Confirm, complete or reschedule bookings.</p></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" id="btn-new">+ Walk-in appointment</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input class="input" id="flt-search" placeholder="🔍 Search patient, owner, ID…">
+      <select class="select" id="flt-status">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <input class="input" type="date" id="flt-date">
+      <select class="select" id="flt-doctor"><option value="">All doctors</option></select>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" id="btn-clear">Clear filters</button>
+    </div>
+
+    <div class="table-wrap" id="apt-table"></div>
+  </div>
+
+  <!-- Detail modal -->
+  <div class="modal-overlay" id="apt-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>Appointment details</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body" id="apt-modal-body"></div>
+      <div class="modal-footer" id="apt-modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Walk-in modal -->
+  <div class="modal-overlay" id="new-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>New walk-in appointment</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="new-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Service <span class="req">*</span></label>
+              <select class="select" id="nw-service" data-validate="required"></select>
+              <div class="field-error">Pick a service.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Doctor</label>
+              <select class="select" id="nw-doctor"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Patient <span class="req">*</span></label>
+              <select class="select" id="nw-patient" data-validate="required"></select>
+              <div class="field-error">Pick a patient.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Status</label>
+              <select class="select" id="nw-status">
+                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Date <span class="req">*</span></label>
+              <input class="input" type="date" id="nw-date" data-validate="required">
+              <div class="field-error">Pick a date.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Time <span class="req">*</span></label>
+              <input class="input" type="time" id="nw-time" data-validate="required">
+              <div class="field-error">Pick a time.</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Reason <span class="req">*</span></label>
+            <input class="input" id="nw-reason" data-validate="required" placeholder="Walk-in — nail trim, sudden limp…">
+            <div class="field-error">Reason is required.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="nw-save">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/table.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('appointments', 'Appointments');
+    DH.ui.initModals();
+
+    const U = DH.ui, S = DH.store, L = DH.lookup;
+    let currentId = null;
+
+    // Populate doctor filter + walk-in selects
+    const doctors = S.list('doctors');
+    document.getElementById('flt-doctor').innerHTML =
+      '<option value="">All doctors</option>' +
+      doctors.map(d => '<option value="' + d.id + '">' + U.escape(d.name) + '</option>').join('');
+    document.getElementById('nw-doctor').innerHTML =
+      '<option value="">First available</option>' +
+      doctors.filter(d => d.active).map(d => '<option value="' + d.id + '">' + U.escape(d.name) + '</option>').join('');
+    document.getElementById('nw-service').innerHTML =
+      S.list('services').filter(s => s.active).map(s => '<option value="' + s.id + '">' + U.escape(s.name) + '</option>').join('');
+    document.getElementById('nw-patient').innerHTML =
+      S.list('patients').map(p => '<option value="' + p.id + '">' + U.escape(p.name) + ' — ' + U.escape(L.ownerName(p)) + '</option>').join('');
+
+    function filteredRows() {
+      const f = DH.tables.readFilters();
+      return S.list('appointments')
+        .map(a => L.appointmentView(a))
+        .filter(v => {
+          if (f.status && v.status !== f.status) return false;
+          if (f.date && v.date !== f.date) return false;
+          if (f.doctor && v.doctorId !== f.doctor) return false;
+          if (f.search) {
+            const hay = (v.patient.name + ' ' + L.ownerName(v.patient) + ' ' + v.id + ' ' + v.service.name).toLowerCase();
+            if (!hay.includes(f.search)) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1));
+    }
+
+    const table = DH.tables.renderTable({
+      mount: 'apt-table',
+      data: [],
+      pageSize: 8,
+      emptyText: 'No appointments match',
+      getFiltered: () => filteredRows(),
+      columns: [
+        { header: 'ID', render: (v) => '<strong>' + v.id.toUpperCase() + '</strong>', sortValue: (v) => v.id },
+        { header: 'Date', render: (v) => U.formatDate(v.date) + '<br><span class="text-muted" style="font-size:.82rem">' + U.formatTime(v.time) + '</span>', sortValue: (v) => v.date + v.time },
+        { header: 'Patient', render: (v) => '<strong>' + U.escape(v.patient.name) + '</strong><br><span class="text-muted" style="font-size:.82rem">' + U.escape(v.patient.breed) + '</span>' },
+        { header: 'Owner', render: (v) => U.escape(L.ownerName(v.patient)) },
+        { header: 'Service', render: (v) => U.escape(v.service.name) },
+        { header: 'Doctor', render: (v) => U.escape(v.doctor.name) },
+        { header: 'Status', render: (v) => U.statusBadge(v.status) },
+        {
+          header: 'Actions', className: 'actions',
+          render: (v) =>
+            '<button class="btn btn-outline btn-sm" data-view="' + v.id + '">View</button>' +
+            (v.status === 'pending' ? '<button class="btn btn-primary btn-sm" data-confirm="' + v.id + '">Confirm</button>' : '') +
+            (v.status === 'confirmed' ? '<button class="btn btn-success btn-sm" style="background:var(--c-success)" data-complete="' + v.id + '">Complete</button>' : '')
+        }
+      ]
+    });
+
+    // Re-render on filter changes
+    ['flt-search', 'flt-status', 'flt-date', 'flt-doctor'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => table.refresh());
+      document.getElementById(id).addEventListener('change', () => table.refresh());
+    });
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      ['flt-search', 'flt-status', 'flt-date', 'flt-doctor'].forEach((id) => { document.getElementById(id).value = ''; });
+      table.refresh();
+    });
+
+    // Row actions (event delegation)
+    document.addEventListener('click', function (e) {
+      const viewBtn = e.target.closest('[data-view]');
+      if (viewBtn) { openDetail(viewBtn.getAttribute('data-view')); return; }
+
+      const confirmBtn = e.target.closest('[data-confirm]');
+      if (confirmBtn) { setStatus(confirmBtn.getAttribute('data-confirm'), 'confirmed'); return; }
+
+      const completeBtn = e.target.closest('[data-complete]');
+      if (completeBtn) { setStatus(completeBtn.getAttribute('data-complete'), 'completed'); return; }
+    });
+
+    function setStatus(id, status) {
+      S.update('appointments', id, { status });
+      U.toast('Appointment ' + id.toUpperCase() + ' → ' + status, 'success');
+      table.refresh();
+    }
+
+    function openDetail(id) {
+      currentId = id;
+      const v = L.appointmentView(S.get('appointments', id));
+      const owner = L.patientOwner(v.patientId);
+
+      document.getElementById('apt-modal-body').innerHTML =
+        '<dl class="detail-grid">' +
+        '<dt>Reference</dt><dd>' + v.id.toUpperCase() + '</dd>' +
+        '<dt>Status</dt><dd>' + U.statusBadge(v.status) + '</dd>' +
+        '<dt>Date &amp; time</dt><dd>' + U.formatDate(v.date) + ' · ' + U.formatTime(v.time) + '</dd>' +
+        '<dt>Service</dt><dd>' + U.escape(v.service.name) + ' (' + U.money(v.service.price) + ')</dd>' +
+        '<dt>Patient</dt><dd>' + U.escape(v.patient.name) + ' · ' + U.escape(v.patient.breed) + ' · ' + v.patient.age + 'y</dd>' +
+        '<dt>Owner</dt><dd>' + U.escape(owner ? owner.name : '—') + ' · ' + U.escape(owner ? owner.phone : '') + '</dd>' +
+        '<dt>Doctor</dt><dd>' + U.escape(v.doctor.name) + ' (' + U.escape(v.doctor.specialty) + ')</dd>' +
+        '<dt>Reason</dt><dd>' + U.escape(v.reason || '—') + '</dd>' +
+        '<dt>Notes</dt><dd>' + U.escape(v.notes || '—') + '</dd>' +
+        '<dt>Booked</dt><dd>' + new Date(v.createdAt).toLocaleString() + '</dd>' +
+        '</dl>' +
+        '<div class="form-group mt-4"><label class="label">Add internal note</label>' +
+        '<textarea class="textarea" id="apt-note" placeholder="Reception notes…">' + U.escape(v.notes || '') + '</textarea></div>';
+
+      const actions = [];
+      if (v.status === 'pending') actions.push('<button class="btn btn-primary" data-act="confirmed">Confirm</button>');
+      if (v.status === 'confirmed') actions.push('<button class="btn btn-primary" style="background:var(--c-success)" data-act="completed">Mark completed</button>');
+      if (v.status !== 'cancelled' && v.status !== 'completed') actions.push('<button class="btn btn-danger" data-act="cancelled">Cancel</button>');
+
+      document.getElementById('apt-modal-footer').innerHTML =
+        actions.join('') + '<button class="btn btn-ghost" data-close-modal>Close</button>';
+
+      document.getElementById('apt-modal-footer').onclick = function (e) {
+        const btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        const status = btn.getAttribute('data-act');
+        S.update('appointments', id, { status, notes: document.getElementById('apt-note').value.trim() });
+        U.toast('Appointment ' + id.toUpperCase() + ' → ' + status, 'success');
+        U.closeModal('apt-modal');
+        table.refresh();
+      };
+
+      U.openModal('apt-modal');
+    }
+
+    // Walk-in creation
+    document.getElementById('btn-new').addEventListener('click', () => U.openModal('new-modal'));
+    document.getElementById('nw-save').addEventListener('click', function () {
+      const form = document.getElementById('new-form');
+      if (!U.validateForm(form)) return;
+
+      const apt = S.add('appointments', {
+        serviceId: document.getElementById('nw-service').value,
+        doctorId: document.getElementById('nw-doctor').value || pickFreeDoctor(),
+        patientId: document.getElementById('nw-patient').value,
+        date: document.getElementById('nw-date').value,
+        time: document.getElementById('nw-time').value,
+        status: document.getElementById('nw-status').value,
+        reason: document.getElementById('nw-reason').value.trim(),
+        notes: 'Created by staff (walk-in)',
+        createdAt: new Date().toISOString()
+      });
+
+      U.toast('Walk-in created: ' + apt.id.toUpperCase(), 'success');
+      U.closeModal('new-modal');
+      table.refresh();
+    });
+
+    function pickFreeDoctor() {
+      const date = document.getElementById('nw-date').value;
+      const time = document.getElementById('nw-time').value;
+      const busy = new Set(
+        S.list('appointments').filter(a => a.date === date && a.time === time && a.status !== 'cancelled').map(a => a.doctorId)
+      );
+      const free = S.list('doctors').filter(d => d.active).find(d => !busy.has(d.id));
+      return free ? free.id : S.list('doctors')[0].id;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us — PawCare Dog Hospital</title>
+  <meta name="description" content="Contact PawCare Dog Hospital — address, phone, email, opening hours and answers to frequently asked questions.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/public.css">
+</head>
+<body>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <h1>Contact Us</h1>
+        <p>Questions, bookings, or just want to say hi — we're here.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container contact-layout">
+        <!-- Info column -->
+        <div>
+          <div class="info-row">
+            <div class="info-icon">📍</div>
+            <div><h4>Address</h4><p>100 Wagging Tail Lane, Springfield</p></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">📞</div>
+            <div><h4>Phone</h4><p>Reception: (555) 910-0123<br>Emergency (24/7): <strong style="color:var(--c-danger)">(555) 910-0911</strong></p></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">✉️</div>
+            <div><h4>Email</h4><p>care@pawcare.vet</p></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">🕘</div>
+            <div><h4>Hours</h4><p>Mon–Fri 8:00 AM – 8:00 PM<br>Sat 9:00 AM – 6:00 PM<br>Sun: emergency only</p></div>
+          </div>
+          <div class="map-placeholder">🗺️ Map placeholder — add Google Maps embed here</div>
+        </div>
+
+        <!-- Form column -->
+        <div>
+          <div class="card card-pad">
+            <h3 class="mb-4">Send us a message</h3>
+            <form id="contact-form" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="ct-name">Name <span class="req">*</span></label>
+                  <input class="input" id="ct-name" data-validate="required" placeholder="Your name">
+                  <div class="field-error">Please enter your name.</div>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="ct-email">Email <span class="req">*</span></label>
+                  <input class="input" id="ct-email" type="email" data-validate="required email" placeholder="you@example.com">
+                  <div class="field-error">Enter a valid email.</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="label" for="ct-subject">Subject <span class="req">*</span></label>
+                <input class="input" id="ct-subject" data-validate="required" placeholder="e.g. Grooming question">
+                <div class="field-error">Please add a subject.</div>
+              </div>
+              <div class="form-group">
+                <label class="label" for="ct-msg">Message <span class="req">*</span></label>
+                <textarea class="textarea" id="ct-msg" data-validate="required" placeholder="How can we help?"></textarea>
+                <div class="field-error">Please write a short message.</div>
+              </div>
+              <button class="btn btn-primary btn-block" type="submit">Send message</button>
+              <p class="hint text-center mt-2">We usually reply within one business day.</p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section section-soft">
+      <div class="container" style="max-width:800px">
+        <div class="section-head">
+          <span class="eyebrow">FAQ</span>
+          <h2>Frequently asked questions</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Do I need an appointment, or can I walk in?</summary>
+            <div class="faq-a">Walk-ins are welcome during opening hours, but booked appointments are seen first. For emergencies, come straight in or call (555) 910-0911.</div>
+          </details>
+          <details>
+            <summary>What should I bring to my first visit?</summary>
+            <div class="faq-a">Any previous medical records or vaccine booklets, a list of current medications, and your dog's favorite treats to make the visit pleasant.</div>
+          </details>
+          <details>
+            <summary>Do you handle insurance?</summary>
+            <div class="faq-a">Yes — we work with all major pet insurers and provide detailed invoices for claims. Payment is due at the time of the visit.</div>
+          </details>
+          <details>
+            <summary>How early should I arrive?</summary>
+            <div class="faq-a">About 10 minutes before your appointment, especially for a first visit so we can set up your dog's profile.</div>
+          </details>
+          <details>
+            <summary>Can I request a specific veterinarian?</summary>
+            <div class="faq-a">Absolutely — pick your preferred doctor during online booking, or mention it when you call.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    DH.ui.initPublicPage();
+
+    document.getElementById('contact-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (DH.ui.validateForm(this)) {
+        DH.ui.toast('Message sent — we\'ll be in touch soon!', 'success');
+        this.reset();
+      } else {
+        DH.ui.toast('Please fix the highlighted fields', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

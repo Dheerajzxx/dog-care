@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div>
+        <h3>Good day, Admin 👋</h3>
+        <p class="text-muted" style="font-size:.9rem" id="today-label"></p>
+      </div>
+      <div class="toolbar-actions">
+        <a class="btn btn-primary" href="appointments.html">+ New appointment</a>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="grid grid-4" id="stat-cards"></div>
+
+    <div class="grid mt-6 dash-grid" style="align-items:start">
+      <!-- Weekly chart -->
+      <div class="card card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Appointments this week</h3>
+          <span class="badge badge-primary" id="week-total"></span>
+        </div>
+        <div class="bar-chart" id="week-chart"></div>
+      </div>
+
+      <!-- Pending requests -->
+      <div class="card card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Pending requests</h3>
+          <span class="badge badge-warning" id="pending-count"></span>
+        </div>
+        <div id="pending-list" style="display:grid;gap:12px;margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div class="grid mt-6 dash-grid" style="align-items:start">
+      <!-- Today's schedule -->
+      <div class="card">
+        <div class="card-pad" style="padding-bottom:0">
+          <h3>Today's schedule</h3>
+        </div>
+        <div class="table-wrap" id="today-table" style="border:none"></div>
+      </div>
+
+      <!-- Vaccination reminders -->
+      <div class="card card-pad">
+        <h3>💉 Vaccination reminders</h3>
+        <p class="text-muted mt-2" style="font-size:.88rem">Vaccines due within 60 days (or overdue).</p>
+        <div id="vax-reminders" style="display:grid;gap:10px;margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/table.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('dashboard', 'Dashboard');
+
+    const U = DH.ui, S = DH.store, L = DH.lookup;
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    document.getElementById('today-label').textContent =
+      new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    const appointments = S.list('appointments');
+    const todays = appointments.filter(a => a.date === todayIso);
+    const month = todayIso.slice(0, 7);
+    const revenue = appointments
+      .filter(a => a.status === 'completed' && (a.date || '').slice(0, 7) === month)
+      .reduce((sum, a) => {
+        const svc = L.service(a.serviceId);
+        return sum + (svc ? svc.price : 0);
+      }, 0);
+    const pending = appointments.filter(a => a.status === 'pending');
+
+    // Stat cards
+    const cards = [
+      { icon: '📅', bg: 'var(--c-primary-light)', value: todays.filter(a => a.status !== 'cancelled').length, label: "Today's appointments" },
+      { icon: '🐕', bg: 'var(--c-accent-light)', value: S.list('patients').length, label: 'Registered patients' },
+      { icon: '💰', bg: 'var(--c-success-light)', value: U.money(revenue), label: 'Revenue this month' },
+      { icon: '⏳', bg: 'var(--c-warning-light)', value: pending.length, label: 'Pending requests' }
+    ];
+    document.getElementById('stat-cards').innerHTML = cards.map(c =>
+      '<div class="stat-card"><div class="stat-icon" style="background:' + c.bg + '">' + c.icon + '</div>' +
+      '<div><div class="stat-value">' + c.value + '</div><div class="stat-label">' + c.label + '</div></div></div>'
+    ).join('');
+
+    // Weekly chart (Mon–Sun of current week)
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+    const counts = days.map(d => appointments.filter(a => a.date === d && a.status !== 'cancelled').length);
+    const maxCount = Math.max(1, ...counts);
+    document.getElementById('week-total').textContent = counts.reduce((a, b) => a + b, 0) + ' total';
+    document.getElementById('week-chart').innerHTML = days.map((d, i) => {
+      const lbl = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const h = Math.round((counts[i] / maxCount) * 100);
+      return '<div class="bar-col">' +
+        '<span class="bar-val">' + (counts[i] || '') + '</span>' +
+        '<div class="bar" style="height:' + h + '%"></div>' +
+        '<span class="bar-lbl">' + lbl + '</span></div>';
+    }).join('');
+
+    // Pending list
+    document.getElementById('pending-count').textContent = pending.length + ' awaiting';
+    document.getElementById('pending-list').innerHTML = pending.length
+      ? pending.slice(0, 4).map(a => {
+          const v = L.appointmentView(a);
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--c-border);border-radius:10px;padding:10px 12px;">' +
+            '<div><strong>' + v.patient.name + '</strong> <span class="text-muted" style="font-size:.85rem">· ' + v.service.name + '</span>' +
+            '<div class="text-muted" style="font-size:.82rem">' + U.formatDate(a.date) + ' · ' + U.formatTime(a.time) + '</div></div>' +
+            '<a class="btn btn-outline btn-sm" href="appointments.html">Review</a></div>';
+        }).join('')
+      : '<p class="text-muted">No pending requests — all caught up! 🎉</p>';
+
+    // Today's schedule table
+    const scheduleRows = todays.sort((a, b) => a.time.localeCompare(b.time));
+    DH.tables.renderTable({
+      mount: 'today-table',
+      data: scheduleRows,
+      pageSize: 6,
+      emptyText: 'No appointments today',
+      columns: [
+        { header: 'Time', render: (a) => '<strong>' + U.formatTime(a.time) + '</strong>' },
+        { header: 'Patient', render: (a) => { const v = L.appointmentView(a); return v.patient.name + ' <span class="text-muted">(' + v.patient.breed + ')</span>'; } },
+        { header: 'Service', render: (a) => L.appointmentView(a).service.name },
+        { header: 'Doctor', render: (a) => L.appointmentView(a).doctor.name },
+        { header: 'Status', render: (a) => U.statusBadge(a.status) }
+      ]
+    });
+
+    // Vaccination reminders (due within 60 days or overdue)
+    const reminders = [];
+    S.list('patients').forEach(p => {
+      (p.vaccinations || []).forEach(v => {
+        if (!v.due) return;
+        const due = new Date(v.due + 'T12:00:00');
+        const diff = Math.ceil((due - new Date()) / 86400000);
+        if (diff <= 60) {
+          reminders.push({ patient: p, vaccine: v.name, due: v.due, overdue: diff < 0, inDays: diff });
+        }
+      });
+    });
+    reminders.sort((a, b) => (a.due < b.due ? -1 : 1));
+    document.getElementById('vax-reminders').innerHTML = reminders.length
+      ? reminders.map(r =>
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
+          '<div><strong>' + r.patient.name + '</strong> <span class="text-muted" style="font-size:.85rem">· ' + r.vaccine + '</span></div>' +
+          (r.overdue
+            ? '<span class="badge badge-danger">Overdue</span>'
+            : '<span class="badge badge-warning">in ' + r.inDays + 'd</span>') +
+          '</div>'
+        ).join('')
+      : '<p class="text-muted">No vaccinations due soon. 🎉</p>';
+  </script>
+</body>
+</html>

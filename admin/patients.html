@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patients — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Patients</h3><p class="text-muted" style="font-size:.9rem">Dog patients, owners and medical records.</p></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" id="btn-add-record">+ Medical record</button>
+        <button class="btn btn-outline" id="btn-add-patient">+ Patient</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input class="input" id="flt-search" placeholder="🔍 Search dog or owner…">
+      <select class="select" id="flt-vax">
+        <option value="">All vaccination states</option>
+        <option value="ok">Vaccines up to date</option>
+        <option value="due">Due within 60 days</option>
+        <option value="overdue">Overdue</option>
+      </select>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="table-wrap" id="pat-table"></div>
+  </div>
+
+  <!-- Patient profile modal -->
+  <div class="modal-overlay" id="pat-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header"><h3>Patient profile</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body" id="pat-modal-body"></div>
+      <div class="modal-footer"><button class="btn btn-ghost" data-close-modal>Close</button></div>
+    </div>
+  </div>
+
+  <!-- Add/edit patient modal -->
+  <div class="modal-overlay" id="pat-edit-modal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="pe-title">New patient</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="pat-form" novalidate>
+          <input type="hidden" id="pe-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Dog's name <span class="req">*</span></label>
+              <input class="input" id="pe-name" data-validate="required" placeholder="Max">
+              <div class="field-error">Name is required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Owner <span class="req">*</span></label>
+              <select class="select" id="pe-owner" data-validate="required"></select>
+              <div class="field-error">Pick an owner.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Breed</label>
+              <input class="input" id="pe-breed" placeholder="Beagle">
+            </div>
+            <div class="form-group">
+              <label class="label">Gender</label>
+              <select class="select" id="pe-gender">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Age (years)</label>
+              <input class="input" type="number" id="pe-age" min="0" max="30" placeholder="2">
+            </div>
+            <div class="form-group">
+              <label class="label">Weight (kg)</label>
+              <input class="input" type="number" id="pe-weight" min="0" step="0.1" placeholder="11">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Allergies (comma-separated)</label>
+            <input class="input" id="pe-allergies" placeholder="Chicken protein, flea saliva">
+          </div>
+          <div class="form-group">
+            <label class="label">Notes</label>
+            <textarea class="textarea" id="pe-notes" placeholder="Behavior, handling notes…"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="pe-save">Save patient</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add medical record modal -->
+  <div class="modal-overlay" id="rec-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>New medical record</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="rec-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Patient <span class="req">*</span></label>
+              <select class="select" id="rc-patient" data-validate="required"></select>
+              <div class="field-error">Pick a patient.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Doctor <span class="req">*</span></label>
+              <select class="select" id="rc-doctor" data-validate="required"></select>
+              <div class="field-error">Pick a doctor.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Visit date <span class="req">*</span></label>
+              <input class="input" type="date" id="rc-date" data-validate="required">
+              <div class="field-error">Date is required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Follow-up date</label>
+              <input class="input" type="date" id="rc-followup">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Diagnosis <span class="req">*</span></label>
+            <input class="input" id="rc-diagnosis" data-validate="required" placeholder="e.g. Mild ear infection">
+            <div class="field-error">Diagnosis is required.</div>
+          </div>
+          <div class="form-group">
+            <label class="label">Treatment</label>
+            <input class="input" id="rc-treatment" placeholder="Cleaning, drops…">
+          </div>
+          <div class="form-group">
+            <label class="label">Prescription</label>
+            <input class="input" id="rc-rx" placeholder="Medication, dose, duration">
+          </div>
+          <div class="form-group">
+            <label class="label">Notes</label>
+            <textarea class="textarea" id="rc-notes" placeholder="Additional notes…"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="rc-save">Save record</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/table.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('patients', 'Patients');
+    DH.ui.initModals();
+
+    const U = DH.ui, S = DH.store, L = DH.lookup;
+
+    document.getElementById('pe-owner').innerHTML = S.list('customers')
+      .map(c => '<option value="' + c.id + '">' + U.escape(c.name) + '</option>').join('');
+    document.getElementById('rc-doctor').innerHTML = S.list('doctors').filter(d => d.active)
+      .map(d => '<option value="' + d.id + '">' + U.escape(d.name) + '</option>').join('');
+    document.getElementById('rc-patient').innerHTML = S.list('patients')
+      .map(p => '<option value="' + p.id + '">' + U.escape(p.name) + ' — ' + U.escape(L.ownerName(p)) + '</option>').join('');
+
+    function vaxState(p) {
+      let worst = 'ok';
+      (p.vaccinations || []).forEach(v => {
+        if (!v.due) return;
+        const days = Math.ceil((new Date(v.due + 'T12:00:00') - new Date()) / 86400000);
+        if (days < 0) worst = 'overdue';
+        else if (days <= 60 && worst !== 'overdue') worst = 'due';
+      });
+      return worst;
+    }
+
+    function filteredRows() {
+      const f = DH.tables.readFilters();
+      return S.list('patients').filter(p => {
+        if (f.search) {
+          const hay = (p.name + ' ' + p.breed + ' ' + L.ownerName(p)).toLowerCase();
+          if (!hay.includes(f.search)) return false;
+        }
+        if (f.status && vaxState(p) !== f.status) return false;
+        return true;
+      });
+    }
+
+    const table = DH.tables.renderTable({
+      mount: 'pat-table',
+      data: [],
+      pageSize: 8,
+      emptyText: 'No patients found',
+      getFiltered: () => filteredRows(),
+      columns: [
+        {
+          header: 'Patient',
+          render: (p) => '<div style="display:flex;align-items:center;gap:10px">' +
+            '<span class="avatar" style="background:' + (p.color || 'var(--c-primary-light)') + (p.color ? ';color:#fff' : '') + '">' + U.initials(p.name) + '</span>' +
+            '<div><strong>' + U.escape(p.name) + '</strong><br><span class="text-muted" style="font-size:.82rem">' + U.escape(p.breed || '—') + '</span></div></div>'
+        },
+        { header: 'Owner', render: (p) => U.escape(L.ownerName(p)) },
+        { header: 'Age', render: (p) => (p.age || 0) + 'y', sortValue: (p) => p.age || 0 },
+        { header: 'Weight', render: (p) => p.weight ? p.weight + ' kg' : '—' },
+        { header: 'Vaccines', render: (p) => {
+            const st = vaxState(p);
+            if (st === 'overdue') return '<span class="badge badge-danger">Overdue</span>';
+            if (st === 'due') return '<span class="badge badge-warning">Due soon</span>';
+            return '<span class="badge badge-success">Up to date</span>';
+          } },
+        {
+          header: 'Actions', className: 'actions',
+          render: (p) =>
+            '<button class="btn btn-outline btn-sm" data-view="' + p.id + '">Profile</button>' +
+            '<button class="btn btn-ghost btn-sm" data-edit="' + p.id + '">Edit</button>' +
+            '<button class="btn btn-ghost btn-sm text-danger" data-del="' + p.id + '">🗑</button>'
+        }
+      ]
+    });
+
+    ['flt-search', 'flt-vax'].forEach((id) => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => table.refresh());
+      el.addEventListener('change', () => table.refresh());
+    });
+
+    // ---------- patient profile ----------
+    function openProfile(id) {
+      const p = S.get('patients', id);
+      const owner = L.patientOwner(id);
+      const records = L.patientRecords(id);
+      const appts = L.patientAppointments(id).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+      document.getElementById('pat-modal-body').innerHTML =
+        '<div style="display:flex;gap:16px;align-items:center;margin-bottom:20px">' +
+        '  <span class="avatar avatar-lg" style="background:' + (p.color || 'var(--c-primary)') + ';color:#fff">' + U.initials(p.name) + '</span>' +
+        '  <div><h3>' + U.escape(p.name) + '</h3>' +
+        '  <span class="text-muted">' + U.escape(p.breed || '—') + ' · ' + (p.gender || '—') + ' · ' + (p.age || 0) + 'y · ' + (p.weight ? p.weight + ' kg' : 'weight n/a') + '</span></div>' +
+        '</div>' +
+
+        '<h4 class="mb-4">Owner</h4>' +
+        '<dl class="detail-grid">' +
+        '<dt>Name</dt><dd>' + U.escape(owner ? owner.name : '—') + '</dd>' +
+        '<dt>Phone</dt><dd>' + U.escape(owner ? owner.phone : '—') + '</dd>' +
+        '<dt>Email</dt><dd>' + U.escape(owner ? owner.email : '—') + '</dd>' +
+        '<dt>Address</dt><dd>' + U.escape(owner && owner.address ? owner.address : '—') + '</dd>' +
+        '</dl>' +
+
+        '<h4 class="mt-6 mb-4">💉 Vaccinations</h4>' +
+        ((p.vaccinations && p.vaccinations.length) ? '<div class="table-wrap"><table class="table"><thead><tr><th>Vaccine</th><th>Given</th><th>Due</th></tr></thead><tbody>' +
+          p.vaccinations.map(v => '<tr><td>' + U.escape(v.name) + '</td><td>' + U.formatDate(v.date) + '</td><td>' +
+            U.formatDate(v.due) + '</td></tr>').join('') + '</tbody></table></div>'
+          : '<p class="text-muted">No vaccinations recorded.</p>') +
+
+        (p.allergies && p.allergies.length
+          ? '<div class="alert alert-danger mt-4">⚠️ Allergies: ' + p.allergies.map(U.escape).join(', ') + '</div>'
+          : '') +
+
+        '<h4 class="mt-6 mb-4">🩺 Medical records</h4>' +
+        (records.length
+          ? '<div class="timeline">' + records.map(r => {
+              const doc = L.doctor(r.doctorId);
+              return '<div class="timeline-item">' +
+                '<span class="tl-date">' + U.formatDate(r.date) + '</span>' +
+                '<h4>' + U.escape(r.diagnosis) + '</h4>' +
+                '<p><strong>Treatment:</strong> ' + U.escape(r.treatment || '—') + '</p>' +
+                '<p><strong>Prescription:</strong> ' + U.escape(r.prescription || 'None') + '</p>' +
+                (r.followUp ? '<p><strong>Follow-up:</strong> ' + U.formatDate(r.followUp) + '</p>' : '') +
+                '<p style="font-size:.82rem" class="text-muted">Dr. ' + (doc ? doc.name.replace(/^Dr\.\s*/i, '') : '—') + '</p>' +
+                '</div>';
+            }).join('') + '</div>'
+          : '<p class="text-muted">No medical records yet.</p>') +
+
+        '<h4 class="mt-6 mb-4">📅 Appointment history</h4>' +
+        (appts.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Service</th><th>Status</th></tr></thead><tbody>' +
+          appts.slice(0, 6).map(a => {
+            const v = L.appointmentView(a);
+            return '<tr><td>' + U.formatDate(a.date) + '</td><td>' + U.escape(v.service.name) + '</td><td>' + U.statusBadge(a.status) + '</td></tr>';
+          }).join('') + '</tbody></table></div>'
+          : '<p class="text-muted">No visits yet.</p>');
+
+      U.openModal('pat-modal');
+    }
+
+    // ---------- add / edit patient ----------
+    function openPatientEdit(id) {
+      document.getElementById('pe-title').textContent = id ? 'Edit patient' : 'New patient';
+      document.getElementById('pe-id').value = id || '';
+      const p = id ? S.get('patients', id) : null;
+      document.getElementById('pe-name').value = p ? p.name : '';
+      document.getElementById('pe-owner').value = p ? p.ownerId : S.list('customers')[0].id;
+      document.getElementById('pe-breed').value = p ? (p.breed || '') : '';
+      document.getElementById('pe-gender').value = p ? (p.gender || 'Female') : 'Female';
+      document.getElementById('pe-age').value = p ? (p.age || '') : '';
+      document.getElementById('pe-weight').value = p ? (p.weight || '') : '';
+      document.getElementById('pe-allergies').value = p && p.allergies ? p.allergies.join(', ') : '';
+      document.getElementById('pe-notes').value = p ? (p.notes || '') : '';
+      U.openModal('pat-edit-modal');
+    }
+
+    document.getElementById('pe-save').addEventListener('click', function () {
+      const form = document.getElementById('pat-form');
+      if (!U.validateForm(form)) return;
+
+      const id = document.getElementById('pe-id').value;
+      const data = {
+        name: document.getElementById('pe-name').value.trim(),
+        ownerId: document.getElementById('pe-owner').value,
+        breed: document.getElementById('pe-breed').value.trim(),
+        gender: document.getElementById('pe-gender').value,
+        age: +document.getElementById('pe-age').value || 0,
+        weight: +document.getElementById('pe-weight').value || 0,
+        allergies: document.getElementById('pe-allergies').value.split(',').map(s => s.trim()).filter(Boolean),
+        notes: document.getElementById('pe-notes').value.trim()
+      };
+
+      if (id) {
+        S.update('patients', id, data);
+        U.toast('Patient updated', 'success');
+      } else {
+        S.add('patients', Object.assign({ photo: '', color: '#0e7c86', vaccinations: [] }, data));
+        U.toast('Patient added', 'success');
+      }
+      U.closeModal('pat-edit-modal');
+      table.setData(S.list('patients')); // hmm: uses getFiltered anyway
+      table.refresh();
+    });
+
+    // ---------- add medical record ----------
+    document.getElementById('btn-add-record').addEventListener('click', () => {
+      document.getElementById('rc-date').value = new Date().toISOString().slice(0, 10);
+      U.openModal('rec-modal');
+    });
+    document.getElementById('btn-add-patient').addEventListener('click', () => openPatientEdit(null));
+
+    document.getElementById('rc-save').addEventListener('click', function () {
+      const form = document.getElementById('rec-form');
+      if (!U.validateForm(form)) return;
+
+      const rec = S.add('records', {
+        patientId: document.getElementById('rc-patient').value,
+        doctorId: document.getElementById('rc-doctor').value,
+        appointmentId: '',
+        date: document.getElementById('rc-date').value,
+        diagnosis: document.getElementById('rc-diagnosis').value.trim(),
+        treatment: document.getElementById('rc-treatment').value.trim(),
+        prescription: document.getElementById('rc-rx').value.trim(),
+        followUp: document.getElementById('rc-followup').value,
+        notes: document.getElementById('rc-notes').value.trim()
+      });
+
+      U.toast('Medical record ' + rec.id.toUpperCase() + ' saved', 'success');
+      U.closeModal('rec-modal');
+    });
+
+    // ---------- row actions ----------
+    document.addEventListener('click', function (e) {
+      const viewBtn = e.target.closest('[data-view]');
+      if (viewBtn) { openProfile(viewBtn.getAttribute('data-view')); return; }
+
+      const editBtn = e.target.closest('[data-edit]');
+      if (editBtn) { openPatientEdit(editBtn.getAttribute('data-edit')); return; }
+
+      const delBtn = e.target.closest('[data-del]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-del');
+        const p = S.get('patients', id);
+        U.confirm({
+          title: 'Delete ' + p.name + '?',
+          message: 'The patient record will be removed. Appointment history stays in the archive.',
+          confirmText: 'Delete'
+        }).then((ok) => {
+          if (ok) {
+            S.remove('patients', id);
+            U.toast(p.name + ' removed', 'success');
+            table.refresh();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

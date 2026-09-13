@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Settings</h3><p class="text-muted" style="font-size:.9rem">Hospital info, booking rules and demo data.</p></div>
+    </div>
+
+    <div class="grid grid-2" style="align-items:start">
+      <!-- Hospital info -->
+      <div class="card card-pad">
+        <h3 class="mb-4">🏥 Hospital information</h3>
+        <form id="info-form" novalidate>
+          <div class="form-group">
+            <label class="label">Hospital name <span class="req">*</span></label>
+            <input class="input" id="st-name" data-validate="required">
+            <div class="field-error">Name is required.</div>
+          </div>
+          <div class="form-group">
+            <label class="label">Reception phone</label>
+            <input class="input" id="st-phone">
+          </div>
+          <div class="form-group">
+            <label class="label">Emergency phone</label>
+            <input class="input" id="st-ephone">
+          </div>
+          <div class="form-group">
+            <label class="label">Email</label>
+            <input class="input" id="st-email" data-validate="email">
+            <div class="field-error">Enter a valid email.</div>
+          </div>
+          <div class="form-group">
+            <label class="label">Address</label>
+            <input class="input" id="st-address">
+          </div>
+          <div class="form-group">
+            <label class="label">Opening hours (display text)</label>
+            <input class="input" id="st-hours" placeholder="Mon–Sat 8:00–20:00 · Sun Emergency Only">
+          </div>
+          <button class="btn btn-primary" type="submit">Save information</button>
+        </form>
+      </div>
+
+      <div style="display:grid;gap:24px">
+        <!-- Booking rules -->
+        <div class="card card-pad">
+          <h3 class="mb-4">📅 Booking rules</h3>
+          <form id="rules-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="label">Opens at</label>
+                <input class="input" type="time" id="st-open" value="08:00">
+              </div>
+              <div class="form-group">
+                <label class="label">Closes at</label>
+                <input class="input" type="time" id="st-close" value="20:00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="label">Slot interval (minutes)</label>
+              <select class="select" id="st-slot">
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="30" selected>30 min</option>
+                <option value="60">60 min</option>
+              </select>
+              <div class="hint">Used to generate time slots on the public booking page.</div>
+            </div>
+            <button class="btn btn-primary" type="submit">Save booking rules</button>
+          </form>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="card card-pad" style="border-color:var(--c-danger-light)">
+          <h3 class="mb-4">⚠️ Demo data</h3>
+          <p class="text-muted" style="font-size:.92rem">This prototype stores everything in your browser's localStorage. Resetting wipes all changes (new appointments, patients, edits) and restores the original demo dataset.</p>
+          <button class="btn btn-danger mt-4" id="btn-reset">Reset demo data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('settings', 'Settings');
+
+    const U = DH.ui, S = DH.store;
+    const cfg = S.getSettings();
+
+    document.getElementById('st-name').value = cfg.hospitalName || '';
+    document.getElementById('st-phone').value = cfg.phone || '';
+    document.getElementById('st-ephone').value = cfg.emergencyPhone || '';
+    document.getElementById('st-email').value = cfg.email || '';
+    document.getElementById('st-address').value = cfg.address || '';
+    document.getElementById('st-hours').value = cfg.openHours || '';
+    document.getElementById('st-open').value = cfg.openTime || '08:00';
+    document.getElementById('st-close').value = cfg.closeTime || '20:00';
+    document.getElementById('st-slot').value = String(cfg.slotInterval || 30);
+
+    document.getElementById('info-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!U.validateForm(this)) return;
+      S.saveSettings({
+        hospitalName: document.getElementById('st-name').value.trim(),
+        phone: document.getElementById('st-phone').value.trim(),
+        emergencyPhone: document.getElementById('st-ephone').value.trim(),
+        email: document.getElementById('st-email').value.trim(),
+        address: document.getElementById('st-address').value.trim(),
+        openHours: document.getElementById('st-hours').value.trim()
+      });
+      U.toast('Hospital information saved', 'success');
+    });
+
+    document.getElementById('rules-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      S.saveSettings({
+        openTime: document.getElementById('st-open').value,
+        closeTime: document.getElementById('st-close').value,
+        slotInterval: +document.getElementById('st-slot').value
+      });
+      U.toast('Booking rules saved — the booking page will use these slots', 'success');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', function () {
+      U.confirm({
+        title: 'Reset all demo data?',
+        message: 'Every change you made (appointments, patients, edits) will be wiped and reseeded. You will also be signed out.',
+        confirmText: 'Reset everything'
+      }).then((ok) => {
+        if (ok) {
+          S.reset();
+          location.href = 'login.html';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

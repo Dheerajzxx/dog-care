@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System — PawCare Dog Hospital</title>
+  <link rel="stylesheet" href="assets/css/shared.css">
+</head>
+<body>
+  <main class="container section" style="padding-top: 2rem;">
+    <span class="eyebrow">Phase 0</span>
+    <h1>🐕 PawCare Design System</h1>
+    <p class="text-muted mt-2">Shared components used across the public site and admin panel.</p>
+
+    <!-- Buttons -->
+    <section class="mt-6">
+      <h2>Buttons</h2>
+      <div class="card card-pad mt-4" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-accent">Accent</button>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-ghost">Ghost</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+      </div>
+    </section>
+
+    <!-- Badges -->
+    <section class="mt-6">
+      <h2>Badges</h2>
+      <div class="card card-pad mt-4" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;" id="badge-row">
+        <span class="badge badge-warning">Pending</span>
+        <span class="badge badge-info">Confirmed</span>
+        <span class="badge badge-success">Completed</span>
+        <span class="badge badge-danger">Cancelled</span>
+        <span class="badge badge-primary">Primary</span>
+        <span class="badge badge-neutral">Inactive</span>
+        <span id="js-badge"></span>
+      </div>
+    </section>
+
+    <!-- Forms -->
+    <section class="mt-6">
+      <h2>Form &amp; Validation</h2>
+      <div class="card card-pad mt-4" style="max-width: 560px;">
+        <form id="demo-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label" for="f-name">Owner name <span class="req">*</span></label>
+              <input class="input" id="f-name" data-validate="required" placeholder="Jane Doe">
+              <div class="field-error">Please enter the owner's name.</div>
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-email">Email <span class="req">*</span></label>
+              <input class="input" id="f-email" type="email" data-validate="required email" placeholder="jane@example.com">
+              <div class="field-error">Enter a valid email address.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label" for="f-phone">Phone <span class="req">*</span></label>
+              <input class="input" id="f-phone" data-validate="required phone" placeholder="555-0100">
+              <div class="field-error">Enter a valid phone number.</div>
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-dog">Dog's name <span class="req">*</span></label>
+              <input class="input" id="f-dog" data-validate="required" placeholder="Max">
+              <div class="field-error">Please enter the dog's name.</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label" for="f-service">Service</label>
+            <select class="select" id="f-service">
+              <option>General Consultation</option>
+              <option>Vaccination</option>
+              <option>Dental Cleaning</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="checkbox"><input type="checkbox" checked> Receive appointment reminders by SMS</label>
+          </div>
+          <button class="btn btn-primary" type="submit">Validate &amp; Toast</button>
+          <button class="btn btn-ghost" type="reset">Reset</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="mt-6">
+      <h2>Table</h2>
+      <div class="table-wrap mt-4" id="table-slot"></div>
+    </section>
+
+    <!-- Stat cards -->
+    <section class="mt-6">
+      <h2>Stat cards <span class="text-muted" style="font-size:0.85rem; font-weight:400;">(admin)</span></h2>
+      <div class="grid grid-4 mt-4">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--c-primary-light);">📅</div>
+          <div><div class="stat-value">8</div><div class="stat-label">Today's appointments</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--c-accent-light);">🐕</div>
+          <div><div class="stat-value">124</div><div class="stat-label">Registered patients</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--c-success-light);">💰</div>
+          <div><div class="stat-value">$3.2k</div><div class="stat-label">Revenue this month</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--c-warning-light);">⏳</div>
+          <div><div class="stat-value">3</div><div class="stat-label">Pending requests</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toasts / modal / confirm -->
+    <section class="mt-6">
+      <h2>Feedback</h2>
+      <div class="card card-pad mt-4" style="display:flex; flex-wrap:wrap; gap:12px;">
+        <button class="btn btn-outline" onclick="DH.ui.toast('Saved successfully', 'success')">Success toast</button>
+        <button class="btn btn-outline" onclick="DH.ui.toast('Something went wrong', 'error')">Error toast</button>
+        <button class="btn btn-outline" onclick="DH.ui.toast('Check-in reminder', 'warning')">Warning toast</button>
+        <button class="btn btn-outline" data-open-modal="demo-modal">Open modal</button>
+        <button class="btn btn-outline" id="confirm-btn">Promise confirm</button>
+      </div>
+    </section>
+
+    <!-- Empty state & alerts -->
+    <section class="mt-6 mb-4">
+      <h2>Empty state &amp; alerts</h2>
+      <div class="grid grid-2 mt-4">
+        <div class="card">
+          <div class="empty-state">
+            <div class="icon">🐾</div>
+            <h3>No appointments found</h3>
+            <p>Try adjusting the filters, or create a new appointment.</p>
+            <button class="btn btn-primary mt-4">New appointment</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px; justify-content:center;">
+          <div class="alert alert-info">ℹ️ Info: Dr. Chen is on leave next week.</div>
+          <div class="alert alert-success">✅ Vaccination record updated.</div>
+          <div class="alert alert-warning">⚠️ Rocky's rabies vaccine is overdue.</div>
+          <div class="alert alert-danger">🚨 Emergency line busy — redirecting calls.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Demo modal -->
+  <div class="modal-overlay" id="demo-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Demo modal</h3>
+        <button class="modal-close" data-close-modal>×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Modals close via the × button, the overlay, or the Escape key.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Close</button>
+        <button class="btn btn-primary" data-close-modal>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    DH.ui.initPublicPage();
+
+    // Badge helper demo
+    document.getElementById('js-badge').innerHTML = DH.ui.statusBadge('pending');
+
+    // Table demo from the mock store
+    const rows = DH.store.list('appointments').slice(0, 4).map(function (apt) {
+      const v = DH.lookup.appointmentView(apt);
+      return '<tr>' +
+        '<td><strong>' + apt.id + '</strong></td>' +
+        '<td>' + v.patient.name + ' <span class="text-muted">(' + v.patient.breed + ')</span></td>' +
+        '<td>' + v.service.name + '</td>' +
+        '<td>' + DH.ui.formatDate(apt.date) + ' ' + DH.ui.formatTime(apt.time) + '</td>' +
+        '<td>' + DH.ui.statusBadge(apt.status) + '</td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('table-slot').innerHTML =
+      '<table class="table"><thead><tr><th>ID</th><th>Patient</th><th>Service</th><th>When</th><th>Status</th></tr></thead><tbody>' +
+      rows + '</tbody></table>';
+
+    // Form validation demo
+    document.getElementById('demo-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (DH.ui.validateForm(this)) {
+        DH.ui.toast('Form valid — would submit now', 'success');
+      } else {
+        DH.ui.toast('Please fix the highlighted fields', 'error');
+      }
+    });
+
+    // Promise confirm demo
+    document.getElementById('confirm-btn').addEventListener('click', async function () {
+      const ok = await DH.ui.confirm({ title: 'Delete appointment?', message: 'apt-1002 will be permanently removed.' });
+      DH.ui.toast(ok ? 'Confirmed — would delete' : 'Cancelled', ok ? 'success' : 'info');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Login — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">🐾</div>
+      <h1>PawCare Admin</h1>
+      <p class="sub">Staff portal — sign in to manage the hospital.</p>
+
+      <div class="alert alert-danger" id="login-error" style="display:none; margin-bottom:16px;">
+        Invalid username or password. Try the demo login below.
+      </div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label class="label" for="lg-user">Username</label>
+          <input class="input" id="lg-user" data-validate="required" autocomplete="username" placeholder="admin">
+          <div class="field-error">Username is required.</div>
+        </div>
+        <div class="form-group">
+          <label class="label" for="lg-pass">Password</label>
+          <input class="input" id="lg-pass" type="password" data-validate="required" autocomplete="current-password" placeholder="••••••••">
+          <div class="field-error">Password is required.</div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+
+      <div class="login-hint">
+        <strong>Demo credentials</strong><br>
+        Username: <code>admin</code> · Password: <code>dog123</code>
+      </div>
+      <p class="text-center mt-4" style="font-size:.85rem">
+        <a href="../index.html" style="color:var(--c-text-soft)">← Back to website</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    // Already signed in? go straight to the dashboard.
+    if (DH.auth.session()) location.replace('dashboard.html');
+
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!DH.ui.validateForm(this)) return;
+
+      const ok = DH.auth.login(
+        document.getElementById('lg-user').value.trim(),
+        document.getElementById('lg-pass').value
+      );
+
+      if (ok) {
+        location.href = 'dashboard.html';
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+        DH.ui.toast('Invalid credentials', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Doctors — PawCare Dog Hospital</title>
+  <meta name="description" content="Meet the veterinarians of PawCare Dog Hospital — specialists in surgery, internal medicine, dermatology, dentistry and emergency care.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/public.css">
+</head>
+<body>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <h1>Meet Our Doctors</h1>
+        <p>Five veterinarians, five specialties — one shared love of dogs.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="grid grid-3" id="doctors-grid"></div>
+      </div>
+    </section>
+
+    <section class="section section-soft">
+      <div class="container text-center">
+        <h2>Want a specific doctor?</h2>
+        <p class="text-muted mt-2">Pick your preferred vet during booking — we'll match the schedule.</p>
+        <a class="btn btn-accent btn-lg mt-4" href="booking.html">Book an appointment</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Doctor bio modal -->
+  <div class="modal-overlay" id="doc-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>Doctor profile</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body" id="doc-modal-body"></div>
+      <div class="modal-footer"><button class="btn btn-ghost" data-close-modal>Close</button></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/public.js"></script>
+  <script>
+    DH.ui.initPublicPage();
+    DH.public.root = '..';
+    DH.public.renderDoctors(document.getElementById('doctors-grid'));
+
+    document.addEventListener('click', function (e) {
+      const trigger = e.target.closest('[data-doc]');
+      if (trigger) DH.public.fillDoctorModal(trigger.getAttribute('data-doc'));
+    });
+  </script>
+</body>
+</html>

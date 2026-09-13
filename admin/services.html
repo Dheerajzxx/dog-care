@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Services — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Services</h3><p class="text-muted" style="font-size:.9rem">What you offer, at what price.</p></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" id="btn-add">+ Add service</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input class="input" id="flt-search" placeholder="🔍 Search services…">
+      <select class="select" id="flt-cat"><option value="">All categories</option></select>
+    </div>
+
+    <div class="table-wrap" id="svc-table"></div>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal-overlay" id="svc-modal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="sm-title">Add service</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="svc-form" novalidate>
+          <input type="hidden" id="sm-id">
+          <div class="form-group">
+            <label class="label">Service name <span class="req">*</span></label>
+            <input class="input" id="sm-name" data-validate="required" placeholder="Nail trim">
+            <div class="field-error">Name is required.</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Category <span class="req">*</span></label>
+              <input class="input" id="sm-cat" list="cat-list" data-validate="required" placeholder="Wellness">
+              <datalist id="cat-list">
+                <option>Wellness</option><option>Surgery</option><option>Dental</option>
+                <option>Grooming</option><option>Emergency</option><option>Diagnostics</option>
+              </datalist>
+              <div class="field-error">Category is required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Price (USD) <span class="req">*</span></label>
+              <input class="input" type="number" id="sm-price" min="0" step="0.01" data-validate="required number" placeholder="45">
+              <div class="field-error">Valid price required.</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Duration (minutes)</label>
+            <input class="input" type="number" id="sm-duration" min="5" step="5" value="30">
+          </div>
+          <div class="form-group">
+            <label class="label">Description</label>
+            <textarea class="textarea" id="sm-desc" placeholder="What's included…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="checkbox"><input type="checkbox" id="sm-active" checked> Bookable on the public site</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="sm-save">Save service</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/table.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('services', 'Services');
+    DH.ui.initModals();
+
+    const U = DH.ui, S = DH.store;
+
+    const catSelect = document.getElementById('flt-cat');
+    function refreshCatFilter() {
+      const cats = Array.from(new Set(S.list('services').map(s => s.category)));
+      catSelect.innerHTML = '<option value="">All categories</option>' +
+        cats.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+    }
+    refreshCatFilter();
+
+    function filteredRows() {
+      const f = DH.tables.readFilters();
+      return S.list('services').filter(s => {
+        if (f.search && !s.name.toLowerCase().includes(f.search)) return false;
+        if (f.status && s.category !== f.status) return false;
+        return true;
+      });
+    }
+
+    const table = DH.tables.renderTable({
+      mount: 'svc-table',
+      data: [],
+      pageSize: 10,
+      emptyText: 'No services found',
+      getFiltered: () => filteredRows(),
+      columns: [
+        { header: 'Service', render: (s) => '<strong>' + U.escape(s.name) + '</strong><br><span class="text-muted" style="font-size:.82rem">' + U.escape(s.description || '') + '</span>' },
+        { header: 'Category', render: (s) => '<span class="badge badge-primary">' + U.escape(s.category) + '</span>' },
+        { header: 'Price', render: (s) => '<strong>' + U.money(s.price) + '</strong>', sortValue: (s) => s.price },
+        { header: 'Duration', render: (s) => s.duration + ' min', sortValue: (s) => s.duration },
+        { header: 'Status', render: (s) => U.statusBadge(s.active ? 'active' : 'inactive') },
+        {
+          header: 'Actions', className: 'actions',
+          render: (s) =>
+            '<button class="btn btn-outline btn-sm" data-edit="' + s.id + '">Edit</button>' +
+            '<button class="btn btn-ghost btn-sm" data-toggle="' + s.id + '">' + (s.active ? 'Unlist' : 'Publish') + '</button>' +
+            '<button class="btn btn-ghost btn-sm text-danger" data-del="' + s.id + '">🗑</button>'
+        }
+      ]
+    });
+
+    document.getElementById('flt-search').addEventListener('input', () => table.refresh());
+    catSelect.addEventListener('change', () => table.refresh());
+
+    function openEdit(id) {
+      document.getElementById('sm-title').textContent = id ? 'Edit service' : 'Add service';
+      document.getElementById('sm-id').value = id || '';
+      const s = id ? S.get('services', id) : null;
+      document.getElementById('sm-name').value = s ? s.name : '';
+      document.getElementById('sm-cat').value = s ? s.category : '';
+      document.getElementById('sm-price').value = s ? s.price : '';
+      document.getElementById('sm-duration').value = s ? s.duration : 30;
+      document.getElementById('sm-desc').value = s ? (s.description || '') : '';
+      document.getElementById('sm-active').checked = s ? s.active : true;
+      U.openModal('svc-modal');
+    }
+
+    document.getElementById('btn-add').addEventListener('click', () => openEdit(null));
+
+    document.getElementById('sm-save').addEventListener('click', function () {
+      if (!U.validateForm(document.getElementById('svc-form'))) return;
+      const id = document.getElementById('sm-id').value;
+      const data = {
+        name: document.getElementById('sm-name').value.trim(),
+        category: document.getElementById('sm-cat').value.trim(),
+        price: +document.getElementById('sm-price').value,
+        duration: +document.getElementById('sm-duration').value || 30,
+        description: document.getElementById('sm-desc').value.trim(),
+        active: document.getElementById('sm-active').checked
+      };
+      if (id) {
+        S.update('services', id, data);
+        U.toast('Service updated', 'success');
+      } else {
+        S.add('services', data);
+        U.toast('Service added', 'success');
+      }
+      U.closeModal('svc-modal');
+      refreshCatFilter();
+      table.refresh();
+    });
+
+    document.addEventListener('click', function (e) {
+      const editBtn = e.target.closest('[data-edit]');
+      if (editBtn) { openEdit(editBtn.getAttribute('data-edit')); return; }
+
+      const toggleBtn = e.target.closest('[data-toggle]');
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute('data-toggle');
+        const s = S.get('services', id);
+        S.update('services', id, { active: !s.active });
+        U.toast(s.name + (s.active ? ' unlisted' : ' published'), 'success');
+        table.refresh();
+        return;
+      }
+
+      const delBtn = e.target.closest('[data-del]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-del');
+        const s = S.get('services', id);
+        U.confirm({ title: 'Delete "' + s.name + '"?', message: 'Existing appointments keep their record of this service.', confirmText: 'Delete' })
+          .then((ok) => {
+            if (ok) {
+              S.remove('services', id);
+              U.toast('Service deleted', 'success');
+              refreshCatFilter();
+              table.refresh();
+            }
+          });
+      }
+    });
+  </script>
+</body>
+</html>

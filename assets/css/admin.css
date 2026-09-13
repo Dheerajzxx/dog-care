@@ -1,0 +1,222 @@
+/* ============================================================
+   DOG HOSPITAL — ADMIN STYLES
+   Toolbars, filters, detail views, login, chart
+   ============================================================ */
+
+/* ---------- Admin shell layout ----------
+   renderAdminShell() appends .admin-sidebar + .admin-main directly
+   to <body> and tags it with .admin-page, so the flex row lives there. */
+body.admin-page {
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--c-bg-soft);
+}
+
+/* (scroll lock: body.nav-locked { overflow: hidden } is defined in shared.css
+   so both the public nav drawer and the admin drawer share it) */
+
+.admin-layout { display: flex; min-height: 100vh; background: var(--c-bg-soft); }
+
+/* ---------- Mobile drawer (off-canvas sidebar) ---------- */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 51, 58, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 590;
+}
+.sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 860px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 600;
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--sh-lg);
+  }
+
+  /* During a finger-following drag: kill the transition so the panel
+     tracks 1:1, add shadow for depth. Style cleared when drag ends. */
+  .admin-sidebar.dragging {
+    transition: none !important;
+    box-shadow: var(--sh-lg);
+    will-change: transform;
+  }
+
+  .admin-menu-toggle { display: block !important; }
+  .admin-main { width: 100%; min-width: 0; }
+}
+.page-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+}
+.page-toolbar h3 { font-size: 1.15rem; }
+.page-toolbar .toolbar-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+/* ---------- Filter row ---------- */
+.filters {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filters .input, .filters .select { width: auto; min-width: 160px; }
+.filters .spacer { flex: 1; }
+
+/* Dashboard two-column sections (chart+pending, schedule+reminders):
+   inline styles can't be overridden by media queries, so use a class. */
+.dash-grid { grid-template-columns: 1.4fr 1fr; }
+@media (max-width: 860px) {
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Pagination ---------- */
+.pagination {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+  align-items: center;
+  padding: var(--sp-4) 0 var(--sp-2);
+  font-size: 0.88rem;
+  color: var(--c-text-soft);
+}
+.page-btn {
+  border: 1.5px solid var(--c-border);
+  background: var(--c-bg);
+  border-radius: var(--r-sm);
+  min-width: 32px;
+  padding: 0.25rem 0.5rem;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.page-btn.active { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- Detail grid (modal bodies) ---------- */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--sp-2) var(--sp-4);
+  font-size: 0.93rem;
+}
+.detail-grid dt { color: var(--c-text-faint); font-weight: 700; }
+.detail-grid dd { margin: 0; font-weight: 600; }
+
+/* ---------- Login page ---------- */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--c-bg-dark), var(--c-primary-dark));
+  padding: var(--sp-4);
+}
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--c-bg);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  padding: var(--sp-7) var(--sp-6);
+}
+.login-card .login-logo {
+  width: 64px; height: 64px;
+  border-radius: var(--r-full);
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 1.8rem;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto var(--sp-4);
+}
+.login-card h1 { font-size: 1.4rem; text-align: center; }
+.login-card .sub { text-align: center; color: var(--c-text-soft); font-size: 0.92rem; margin: var(--sp-2) 0 var(--sp-5); }
+.login-hint {
+  background: var(--c-bg-soft);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  font-size: 0.85rem;
+  color: var(--c-text-soft);
+  margin-top: var(--sp-4);
+  text-align: center;
+}
+
+/* ---------- Mini bar chart ---------- */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  height: 140px;
+  padding-top: var(--sp-3);
+}
+.bar-chart .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); height: 100%; justify-content: flex-end; }
+.bar-chart .bar {
+  width: 70%;
+  max-width: 44px;
+  background: linear-gradient(180deg, var(--c-primary), var(--c-primary-dark));
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  min-height: 4px;
+  transition: height 0.4s ease;
+  position: relative;
+}
+.bar-chart .bar-val { font-size: 0.75rem; font-weight: 800; color: var(--c-primary-dark); }
+.bar-chart .bar-lbl { font-size: 0.72rem; color: var(--c-text-faint); font-weight: 700; }
+
+/* ---------- Timeline (medical records) ---------- */
+.timeline { display: grid; gap: var(--sp-4); }
+.timeline-item {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  position: relative;
+}
+.timeline-item .tl-date {
+  display: inline-block;
+  background: var(--c-primary-light);
+  color: var(--c-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  border-radius: var(--r-full);
+  padding: 0.15rem 0.7rem;
+  margin-bottom: var(--sp-2);
+}
+.timeline-item h4 { margin-bottom: var(--sp-1); }
+.timeline-item p { font-size: 0.9rem; color: var(--c-text-soft); }
+
+/* ---------- Vet schedule (doctor availability) ---------- */
+.schedule-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--sp-2); }
+.schedule-day {
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-2);
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.schedule-day.off { background: var(--c-bg-soft); color: var(--c-text-faint); }
+.schedule-day.on { background: var(--c-primary-light); border-color: var(--c-primary); color: var(--c-primary-dark); }
+.schedule-day:hover { border-color: var(--c-primary); }
+
+@media (max-width: 700px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-grid dt { margin-top: var(--sp-1); }
+}

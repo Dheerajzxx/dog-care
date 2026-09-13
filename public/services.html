@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Services &amp; Pricing — PawCare Dog Hospital</title>
+  <meta name="description" content="Wellness exams, vaccinations, surgery, dental care, grooming, diagnostics and 24/7 emergency care — see services and pricing at PawCare Dog Hospital.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/public.css">
+</head>
+<body>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <h1>Services &amp; Pricing</h1>
+        <p>Transparent pricing, no surprises. Filter by category and book in one click.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="filter-bar" id="service-filter"></div>
+        <div class="grid grid-3" id="services-grid"></div>
+      </div>
+    </section>
+
+    <section class="section section-soft">
+      <div class="container text-center">
+        <h2>Not sure what your dog needs?</h2>
+        <p class="text-muted mt-2">Start with a general consultation — our vets will guide you from there.</p>
+        <a class="btn btn-accent btn-lg mt-4" href="booking.html?service=svc-1">Book a consultation</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/public.js"></script>
+  <script>
+    DH.ui.initPublicPage();
+    DH.public.root = '..';
+    DH.public.initServiceFilter(
+      document.getElementById('service-filter'),
+      document.getElementById('services-grid')
+    );
+  </script>
+</body>
+</html>

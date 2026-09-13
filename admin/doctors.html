@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctors — PawCare Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="stylesheet" href="../assets/css/shared.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div id="admin-content">
+    <div class="page-toolbar">
+      <div><h3>Doctors</h3><p class="text-muted" style="font-size:.9rem">Manage veterinarians, specialties and availability.</p></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" id="btn-add">+ Add doctor</button>
+      </div>
+    </div>
+
+    <div class="grid grid-3" id="doctor-cards"></div>
+  </div>
+
+  <!-- Edit doctor modal -->
+  <div class="modal-overlay" id="doc-modal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="dm-title">Add doctor</h3><button class="modal-close" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <form id="doc-form" novalidate>
+          <input type="hidden" id="dm-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Full name <span class="req">*</span></label>
+              <input class="input" id="dm-name" data-validate="required" placeholder="Dr. Jane Smith">
+              <div class="field-error">Name is required.</div>
+            </div>
+            <div class="form-group">
+              <label class="label">Specialty <span class="req">*</span></label>
+              <input class="input" id="dm-spec" data-validate="required" placeholder="Surgery">
+              <div class="field-error">Specialty is required.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">Avatar color</label>
+              <input class="input" type="color" id="dm-color" value="#0e7c86" style="height:42px; padding:4px;">
+            </div>
+            <div class="form-group">
+              <label class="label" style="visibility:hidden">.</label>
+              <label class="checkbox"><input type="checkbox" id="dm-active" checked> Currently active</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Short bio</label>
+            <textarea class="textarea" id="dm-bio" placeholder="Experience, focus areas…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="label">Weekly availability (click days to toggle)</label>
+            <div class="schedule-grid" id="dm-schedule"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="dm-save">Save doctor</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    DH.ui.requireAuth();
+    DH.ui.renderAdminShell('doctors', 'Doctors');
+    DH.ui.initModals();
+
+    const U = DH.ui, S = DH.store;
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    function renderCards() {
+      const docs = S.list('doctors');
+      document.getElementById('doctor-cards').innerHTML = docs.map(d =>
+        '<div class="card card-pad">' +
+        '  <div style="display:flex;gap:14px;align-items:flex-start">' +
+        '    <span class="avatar" style="background:' + d.color + ';color:#fff;width:56px;height:56px;font-size:1.2rem">' + U.initials(d.name) + '</span>' +
+        '    <div style="flex:1">' +
+        '      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">' +
+        '        <h4>' + U.escape(d.name) + '</h4>' + U.statusBadge(d.active ? 'active' : 'inactive') +
+        '      </div>' +
+        '      <div style="color:var(--c-primary);font-weight:800;font-size:.88rem">' + U.escape(d.specialty) + '</div>' +
+        '    </div>' +
+        '  </div>' +
+        '  <p class="text-muted mt-4" style="font-size:.88rem">' + U.escape(d.bio || '') + '</p>' +
+        '  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+        (d.schedule || []).map((on, i) =>
+          '<span class="badge ' + (on ? 'badge-primary' : 'badge-neutral') + '">' + DAYS[i] + '</span>'
+        ).join('') +
+        '  </div>' +
+        '  <div class="mt-4" style="display:flex;gap:8px">' +
+        '    <button class="btn btn-outline btn-sm" data-edit="' + d.id + '">Edit</button>' +
+        '    <button class="btn btn-ghost btn-sm" data-toggle="' + d.id + '">' + (d.active ? 'Deactivate' : 'Activate') + '</button>' +
+        '  </div>' +
+        '</div>'
+      ).join('');
+    }
+
+    function openEdit(id) {
+      document.getElementById('dm-title').textContent = id ? 'Edit doctor' : 'Add doctor';
+      document.getElementById('dm-id').value = id || '';
+      const d = id ? S.get('doctors', id) : null;
+      document.getElementById('dm-name').value = d ? d.name : '';
+      document.getElementById('dm-spec').value = d ? d.specialty : '';
+      document.getElementById('dm-color').value = d ? d.color : '#0e7c86';
+      document.getElementById('dm-active').checked = d ? d.active : true;
+      document.getElementById('dm-bio').value = d ? (d.bio || '') : '';
+
+      const sched = d && d.schedule ? d.schedule : [true, true, true, true, true, true, false];
+      document.getElementById('dm-schedule').innerHTML = sched.map((on, i) =>
+        '<div class="schedule-day ' + (on ? 'on' : 'off') + '" data-day="' + i + '">' + DAYS[i] + '</div>'
+      ).join('');
+      U.openModal('doc-modal');
+    }
+
+    // toggle schedule days
+    document.getElementById('dm-schedule').addEventListener('click', function (e) {
+      const day = e.target.closest('[data-day]');
+      if (day) day.classList.toggle('on') || day.classList.toggle('off');
+    });
+
+    document.getElementById('btn-add').addEventListener('click', () => openEdit(null));
+
+    document.getElementById('dm-save').addEventListener('click', function () {
+      if (!U.validateForm(document.getElementById('doc-form'))) return;
+
+      const id = document.getElementById('dm-id').value;
+      const schedule = Array.from(document.querySelectorAll('#dm-schedule .schedule-day'))
+        .sort((a, b) => (+a.getAttribute('data-day')) - (+b.getAttribute('data-day')))
+        .map(el => el.classList.contains('on'));
+
+      const data = {
+        name: document.getElementById('dm-name').value.trim(),
+        specialty: document.getElementById('dm-spec').value.trim(),
+        color: document.getElementById('dm-color').value,
+        active: document.getElementById('dm-active').checked,
+        bio: document.getElementById('dm-bio').value.trim(),
+        schedule
+      };
+
+      if (id) {
+        S.update('doctors', id, data);
+        U.toast('Doctor updated', 'success');
+      } else {
+        S.add('doctors', data);
+        U.toast('Doctor added', 'success');
+      }
+      U.closeModal('doc-modal');
+      renderCards();
+    });
+
+    document.addEventListener('click', function (e) {
+      const editBtn = e.target.closest('[data-edit]');
+      if (editBtn) { openEdit(editBtn.getAttribute('data-edit')); return; }
+
+      const toggleBtn = e.target.closest('[data-toggle]');
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute('data-toggle');
+        const d = S.get('doctors', id);
+        S.update('doctors', id, { active: !d.active });
+        U.toast(d.name + (d.active ? ' deactivated' : ' activated'), 'success');
+        renderCards();
+      }
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
