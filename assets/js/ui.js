@@ -189,10 +189,25 @@ window.DH = window.DH || {};
 
   /* ---------- Shared layout: public header & footer ---------- */
 
+  /** Absolute path to the deployed site root (e.g. "/dog-care", or ""
+      when served from the domain root). Derived from the page's own path
+      so links resolve correctly with or without a trailing slash, from a
+      subpath like GitHub Pages, from the domain root, or from a local file. */
   function rootPrefix() {
-    const parts = location.pathname.split('/').filter(Boolean);
-    // e.g. ["public", "about.html"] → ".." ; ["index.html"] → "."
-    return parts.length > 1 ? '..' : '.';
+    const path = location.pathname;
+    // Inside /public, /admin or /assets → the site root is everything before it.
+    const m = path.match(/^(.*?)\/(?:public|admin|assets)(?=\/|$)/);
+    if (m) return m[1] || '';
+
+    // Home page: the site root is the directory this page lives in.
+    if (path === '/' || path === '') return '';
+    const last = path.split('/').filter(Boolean).pop() || '';
+    if (last.indexOf('.') > -1) {
+      // Looks like a page (e.g. "/index.html") → root is its directory.
+      return path.replace(/\/[^/]*$/, '');
+    }
+    // Bare directory with or without trailing slash ("/dog-care" / "/dog-care/").
+    return path.replace(/\/$/, '');
   }
 
   ui.renderHeader = function () {
@@ -541,6 +556,8 @@ window.DH = window.DH || {};
     document.addEventListener('touchend', onTouchEnd);
     document.addEventListener('touchcancel', onTouchEnd);
   };
+
+  ui.siteRoot = rootPrefix;
 
   window.DH.ui = ui;
 })();

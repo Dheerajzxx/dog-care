@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PawCare Dog Hospital — Compassionate Care for Your Best Friend</title>
   <meta name="description" content="PawCare Dog Hospital offers wellness exams, surgery, dental care, grooming and 24/7 emergency care for dogs. Book an appointment online today.">
+  <script>
+    // Normalize a bare base URL (e.g. ".../dog-care" → ".../dog-care/") so the
+    // browser resolves this page's relative links from the site root, not the
+    // domain root. GitHub Pages redirects, but some in-app browsers skip it.
+    if (location.pathname.length > 1 && !/\.html?$/i.test(location.pathname) && !/\/$/.test(location.pathname)) {
+      history.replaceState(null, '', location.pathname + '/');
+    }
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
   <link rel="stylesheet" href="assets/css/shared.css">
   <link rel="stylesheet" href="assets/css/public.css">
@@ -145,7 +153,6 @@
   <script src="assets/js/public.js"></script>
   <script>
     DH.ui.initPublicPage();
-    DH.public.root = '.';
     DH.public.renderServices(document.getElementById('home-services'), 'All');
     // Limit home previews to 3 cards
     const homeGrid = document.getElementById('home-services');

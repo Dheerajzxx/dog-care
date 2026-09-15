@@ -21,6 +21,7 @@ window.DH = window.DH || {};
 
   const publicApi = {
     icons: SERVICE_ICONS,
+    root: ui.siteRoot(),
 
     /** Service cards into a grid element. Optionally filter by category. */
     renderServices(gridEl, category) {
